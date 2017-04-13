@@ -2,12 +2,12 @@
 /**
  * Counter Reducer
  * 
- * @param {Object} state: previous state
- * @param {Object} action: {type: {string}, payload: any}
+ * @param  {Object} state: previous state
+ * @param  {Object} action: {type: {string}, payload: any}
  * @return {Object} nextState: a mixed new state
  */
 
-const counter = (state = 0, action) => {  
+const counter = (state = 0, action) => {
   if (action.type === 'INCREMENT') {
     return state + 1
   } else if (action.type === 'DECREMENT'){
@@ -47,7 +47,7 @@ const counter = (state = 0, action) => {
 /**
  * We will re-implement createStore here
  * 
- * @param {Function} reducer: recieve action and previous state then return a new state
+ * @param  {Function} reducer: recieve action and previous state then return a new state
  * @return {Object}  Three method included: getState, dispatch, subscribe
  */
 const createStore = (reducer) => {
@@ -67,7 +67,7 @@ const createStore = (reducer) => {
    */
   const dispatch = (action) => {
     state = reducer(state, action)
-    listeners.forEach(listeners => listeners())
+    listeners.forEach(listener => listener())
   }
 
   const subscribe = (listener) => {

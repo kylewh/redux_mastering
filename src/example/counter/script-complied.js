@@ -3,8 +3,8 @@
 /**
  * Counter Reducer
  * 
- * @param {Object} state: previous state
- * @param {Object} action: {type: {string}, payload: any}
+ * @param  {Object} state: previous state
+ * @param  {Object} action: {type: {string}, payload: any}
  * @return {Object} nextState: a mixed new state
  */
 
@@ -51,7 +51,7 @@ var counter = function counter() {
 /**
  * We will re-implement createStore here
  * 
- * @param {Function} reducer: recieve action and previous state then return a new state
+ * @param  {Function} reducer: recieve action and previous state then return a new state
  * @return {Object}  Three method included: getState, dispatch, subscribe
  */
 var createStore = function createStore(reducer) {
@@ -73,8 +73,8 @@ var createStore = function createStore(reducer) {
    */
   var dispatch = function dispatch(action) {
     state = reducer(state, action);
-    listeners.forEach(function (listeners) {
-      return listeners();
+    listeners.forEach(function (listener) {
+      return listener();
     });
   };
 
