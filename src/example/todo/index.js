@@ -37,6 +37,31 @@ const todos = (state = [], action) => {
   }
 }
 
+// If we want to add more information such as an filter into the state,
+// we need to create another reducer and mix the two reducer into one
+// Let's go
+
+const visibilityFilter = (state = 'SHOW_ALL', action) => {
+  switch (action.type) {
+    case 'SET_VISIBILITY_FILTER':
+      return action.filter
+    default:
+      return state
+  }
+}
+
+// You may notice, initially state.todos is undefined,
+// as the previous example when we implement createStore,
+// we know once an action is dispatched, the state will --
+// be updated by getting a new state returned from reducer call
+// so after one dispatch, the state will have the key todos & visibilityFilter
+const todoApp = (state={}, action) => {
+  return {
+    todos: todos(state.todos, action),
+    visibilityFilter: visibilityFilter(state.visibilityFilter, action)
+  }
+}
+
 const Todo = ({content, status}) => {
   return (
     <div style={{border: '1px solid #ccc', display: 'inline-block', padding: 10, margin: 10}} >
@@ -48,23 +73,23 @@ const Todo = ({content, status}) => {
 
 const { createStore } = Redux
 
-const store = createStore(todos)
+const store = createStore(todoApp) // change todo to todoApp
 
 const render = () => {
   ReactDOM.render(
     <div>
-      {store.getState().map( todo => {
+      {store.getState().todos.map( todo => {
         let status = todo.completed ? 'yes' : 'no'
         return (
-          <div>
+          <div key={todo.id}>
             <Todo
-              key={todo.id}
               content={todo.text}
               status={status}
             />
           </div>
         )
       })}
+      <p>{`Filter: ${store.getState().visibilityFilter}`}</p>
     </div>
     ,
     document.getElementById('root')

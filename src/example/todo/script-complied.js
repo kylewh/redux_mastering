@@ -43,6 +43,37 @@ var todos = function todos() {
   }
 };
 
+// If we want to add more information such as an filter into the state,
+// we need to create another reducer and mix the two reducer into one
+// Let's go
+
+var visibilityFilter = function visibilityFilter() {
+  var state = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : 'SHOW_ALL';
+  var action = arguments[1];
+
+  switch (action.type) {
+    case 'SET_VISIBILITY_FILTER':
+      return action.filter;
+    default:
+      return state;
+  }
+};
+
+// You may notice, initially state.todos is undefined,
+// as the previous example when we implement createStore,
+// we know once an action is dispatched, the state will --
+// be updated by getting a new state returned from reducer call
+// so after one dispatch, the state will have the key todos & visibilityFilter
+var todoApp = function todoApp() {
+  var state = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
+  var action = arguments[1];
+
+  return {
+    todos: todos(state.todos, action),
+    visibilityFilter: visibilityFilter(state.visibilityFilter, action)
+  };
+};
+
 var Todo = function Todo(_ref) {
   var content = _ref.content,
       status = _ref.status;
@@ -67,24 +98,28 @@ var _Redux = Redux,
     createStore = _Redux.createStore;
 
 
-var store = createStore(todos);
+var store = createStore(todoApp); // change todo to todoApp
 
 var render = function render() {
   ReactDOM.render(React.createElement(
     'div',
     null,
-    store.getState().map(function (todo) {
+    store.getState().todos.map(function (todo) {
       var status = todo.completed ? 'yes' : 'no';
       return React.createElement(
         'div',
-        null,
+        { key: todo.id },
         React.createElement(Todo, {
-          key: todo.id,
           content: todo.text,
           status: status
         })
       );
-    })
+    }),
+    React.createElement(
+      'p',
+      null,
+      'Filter: ' + store.getState().visibilityFilter
+    )
   ), document.getElementById('root'));
 };
 
