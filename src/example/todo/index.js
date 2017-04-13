@@ -21,6 +21,7 @@ const todo = (state, action) => {
   }
 }
 
+
 const todos = (state = [], action) => {
   switch (action.type) {
     case 'ADD_TODO':
@@ -55,12 +56,16 @@ const visibilityFilter = (state = 'SHOW_ALL', action) => {
 // we know once an action is dispatched, the state will --
 // be updated by getting a new state returned from reducer call
 // so after one dispatch, the state will have the key todos & visibilityFilter
-const todoApp = (state={}, action) => {
-  return {
-    todos: todos(state.todos, action),
-    visibilityFilter: visibilityFilter(state.visibilityFilter, action)
-  }
-}
+
+// By implement a combined reducer by hand, 
+// redux offered an api called combineReducers
+
+// const todoApp = (state={}, action) => {
+//   return {
+//     todos: todos(state.todos, action),
+//     visibilityFilter: visibilityFilter(state.visibilityFilter, action)
+//   }
+// }
 
 const Todo = ({content, status}) => {
   return (
@@ -70,6 +75,13 @@ const Todo = ({content, status}) => {
     </div>
   )
 }
+
+const { combineReducers } = Redux
+
+const todoApp = combineReducers({
+  todos,
+  visibilityFilter
+}) //ES6 syntax suugar => { todos: todos, visibilityFilter: visibilityFilter }
 
 const { createStore } = Redux
 
@@ -122,6 +134,4 @@ store.dispatch({
   id: 2,
   text: 'Learn React-routerv4'
 })
-
-
 

@@ -64,15 +64,16 @@ var visibilityFilter = function visibilityFilter() {
 // we know once an action is dispatched, the state will --
 // be updated by getting a new state returned from reducer call
 // so after one dispatch, the state will have the key todos & visibilityFilter
-var todoApp = function todoApp() {
-  var state = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
-  var action = arguments[1];
 
-  return {
-    todos: todos(state.todos, action),
-    visibilityFilter: visibilityFilter(state.visibilityFilter, action)
-  };
-};
+// By implement a combined reducer by hand, 
+// redux offered an api called combineReducers
+
+// const todoApp = (state={}, action) => {
+//   return {
+//     todos: todos(state.todos, action),
+//     visibilityFilter: visibilityFilter(state.visibilityFilter, action)
+//   }
+// }
 
 var Todo = function Todo(_ref) {
   var content = _ref.content,
@@ -95,7 +96,16 @@ var Todo = function Todo(_ref) {
 };
 
 var _Redux = Redux,
-    createStore = _Redux.createStore;
+    combineReducers = _Redux.combineReducers;
+
+
+var todoApp = combineReducers({
+  todos: todos,
+  visibilityFilter: visibilityFilter
+}); //ES6 syntax suugar => { todos: todos, visibilityFilter: visibilityFilter }
+
+var _Redux2 = Redux,
+    createStore = _Redux2.createStore;
 
 
 var store = createStore(todoApp); // change todo to todoApp
