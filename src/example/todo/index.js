@@ -1,24 +1,37 @@
+// Reducer composition => separate the reducer as possible
+// It will make your reducer logic clear and enhance the reuseability
+// Micro reducer: only deal with state of single todo item,
+// that's why we extract this logic from the previous reducer with obscure logic
+const todo = (state, action) => {
+  switch (action.type) {
+    case 'ADD_TODO':
+      return {
+        id: action.id,
+        text: action.text,
+        completed: false
+      }
+    case 'TOGGLE_TODO':
+      if (state.id !== action.id) {
+        return state
+      }
+			return {
+				...state,
+				completed: !state.completed
+			}
+  }
+}
+
 const todos = (state = [], action) => {
   switch (action.type) {
     case 'ADD_TODO':
       return [
         ...state,
-        {
-          id: action.id,
-          text: action.text,
-          completed: false
-        }
+        todo(undefined, action) 
+        // Notice that when action.type is 'ADD_TODO'
+        // We only need data from action, so we can just pass undefine into todo
       ]
     case 'TOGGLE_TODO':
-      return state.map( todo => {
-        if (todo.id !== action.id) {
-          return todo
-        }
-        return {
-          ...todo,
-          completed: !todo.completed
-        }
-      })
+      return state.map( t => todo(t, action))
     default: 
       return state
   }
@@ -79,6 +92,11 @@ store.dispatch({
   id: 1
 })
 
+store.dispatch({
+  type: 'ADD_TODO',
+  id: 2,
+  text: 'Learn React-routerv4'
+})
 
 
 
