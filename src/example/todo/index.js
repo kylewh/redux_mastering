@@ -67,15 +67,6 @@ const visibilityFilter = (state = 'SHOW_ALL', action) => {
 //   }
 // }
 
-const Todo = ({content, status}) => {
-  return (
-    <div style={{border: '1px solid #ccc', display: 'inline-block', padding: 10, margin: 10}} >
-      <p style={{margin: 0}}>{`content: ${content}`}</p>
-      <p style={{margin: 0}}>{`status: ${status}`}</p>
-    </div>
-  )
-}
-
 // const { combineReducers } = Redux
 
 // In order to fully understand what's combineReducers do
@@ -108,22 +99,44 @@ const { createStore } = Redux
 
 const store = createStore(todoApp) // change todo to todoApp
 
+const { Component } = React
+
+let nextTodoId = 0
+// Define TodoApp component
+class TodoApp extends Component {
+  render () {
+    return (
+      <div>
+        <input ref={node => {
+          this.input = node
+        }} />
+        <button onClick={() => {
+          store.dispatch({
+            type: 'ADD_TODO',
+            text: this.input.value,
+            id: nextTodoId++
+          })
+          this.input.value = ''
+        }}>
+          Add Todo
+        </button>
+        <ul>
+          {this.props.todos.map(todo =>
+            <li key={todo.id}>
+              {todo.text}
+            </li>
+          )}
+        </ul>
+      </div>
+    )
+  }
+}
+
 const render = () => {
   ReactDOM.render(
-    <div>
-      {store.getState().todos.map( todo => {
-        let status = todo.completed ? 'yes' : 'no'
-        return (
-          <div key={todo.id}>
-            <Todo
-              content={todo.text}
-              status={status}
-            />
-          </div>
-        )
-      })}
-      <p>{`Filter: ${store.getState().visibilityFilter}`}</p>
-    </div>
+    <TodoApp
+      todos={store.getState().todos}
+    />
     ,
     document.getElementById('root')
   )
@@ -132,27 +145,3 @@ const render = () => {
 render()
 
 store.subscribe(render)
-
-store.dispatch({
-  type: 'ADD_TODO',
-  id: 0,
-  text: 'Learn Redux'
-})
-
-store.dispatch({
-  type: 'ADD_TODO',
-  id: 1,
-  text: 'Learn React-router'
-})
-
-store.dispatch({
-  type: 'TOGGLE_TODO',
-  id: 1
-})
-
-store.dispatch({
-  type: 'ADD_TODO',
-  id: 2,
-  text: 'Learn React-routerv4'
-})
-
