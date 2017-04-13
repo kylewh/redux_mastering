@@ -54,7 +54,7 @@ const visibilityFilter = (state = 'SHOW_ALL', action) => {
 // You may notice, initially state.todos is undefined,
 // as the previous example when we implement createStore,
 // we know once an action is dispatched, the state will --
-// be updated by getting a new state returned from reducer call
+// be updated by getting a new state returned from reducer call.
 // so after one dispatch, the state will have the key todos & visibilityFilter
 
 // By implement a combined reducer by hand, 
@@ -76,7 +76,28 @@ const Todo = ({content, status}) => {
   )
 }
 
-const { combineReducers } = Redux
+// const { combineReducers } = Redux
+
+// In order to fully understand what's combineReducers do
+// Let's try to implement it
+
+/**
+ * combineReducers is a reducer
+ * @param  {Object}   reducers: { reducer1: reducer1, reducer2: reducer2 }
+ * @return {function} mixed reducer
+ */
+const combineReducers = (reducers) => {
+  return (state ={}, action) => {
+    return Object.keys(reducers).reduce(
+      (nextState, key) => { // When gave an initial value(here is {}), nextState will be {}
+        nextState[key] = reducers[key](state[key], action)
+        // This is actually very similar to 'todos: todos(state.todos, action)'
+        return nextState
+      },
+      {} //initial value => offered a container for mixed state
+    )
+  }
+}
 
 const todoApp = combineReducers({
   todos,

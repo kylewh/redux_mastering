@@ -62,7 +62,7 @@ var visibilityFilter = function visibilityFilter() {
 // You may notice, initially state.todos is undefined,
 // as the previous example when we implement createStore,
 // we know once an action is dispatched, the state will --
-// be updated by getting a new state returned from reducer call
+// be updated by getting a new state returned from reducer call.
 // so after one dispatch, the state will have the key todos & visibilityFilter
 
 // By implement a combined reducer by hand, 
@@ -95,17 +95,38 @@ var Todo = function Todo(_ref) {
   );
 };
 
-var _Redux = Redux,
-    combineReducers = _Redux.combineReducers;
+// const { combineReducers } = Redux
 
+// In order to fully understand what's combineReducers do
+// Let's try to implement it
+
+/**
+ * combineReducers is a reducer
+ * @param  {Object}   reducers: { reducer1: reducer1, reducer2: reducer2 }
+ * @return {function} mixed reducer
+ */
+var combineReducers = function combineReducers(reducers) {
+  return function () {
+    var state = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
+    var action = arguments[1];
+
+    return Object.keys(reducers).reduce(function (nextState, key) {
+      // When gave an initial value(here is {}), nextState will be {}
+      nextState[key] = reducers[key](state[key], action);
+      // This is actually very similar to 'todos: todos(state.todos, action)'
+      return nextState;
+    }, {} //initial value => offered a container for mixed state
+    );
+  };
+};
 
 var todoApp = combineReducers({
   todos: todos,
   visibilityFilter: visibilityFilter
 }); //ES6 syntax suugar => { todos: todos, visibilityFilter: visibilityFilter }
 
-var _Redux2 = Redux,
-    createStore = _Redux2.createStore;
+var _Redux = Redux,
+    createStore = _Redux.createStore;
 
 
 var store = createStore(todoApp); // change todo to todoApp
