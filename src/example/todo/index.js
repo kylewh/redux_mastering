@@ -72,50 +72,30 @@ const getVisibleTodos = (todos, filter) => {
 }
 
 let nextTodoId = 0
-
-/**
- * Compenents
- *  Todo
- *    @param {Function} onClick
- *                      Dispatch 'TOGGLE_TODO' action
- *    @param {Boolean}  completed
- *                      When todo was clicked, toggle action will invert its state
- *    @param {String}   text
- *                      Content of todoItem, from AddTodo's loacal variable 'input'
- *                      input refers to input element by using ref={node => input = node}
- * 
- *  TodoList
- *    @param {Array}    todos
- *                      Todos array, but was filtered by visibilityFilter
- *    @param {Function} onTodoClick
- *                      Passed to Todo as @param {Function} onClick
- *                      
- *  AddTodo
- *    @param {Function} onAddClick
- *                      Dispatch 'ADD_TODO' action
- * 
- *  FilterLink
- *    @param {String}   filter
- *                      Specify the state of visibilityFilter
- *    @param {String}   currentFilter
- *                      Passed from Footer @param {String} visibilityFilter
- *    @param {Function} onClick
- *                      @param {String} filter => @param {String} filter
- *                      Dispatch 'SET_VISIBILITY_FILTER' action
- * 
- *  Footer
- *    @param {String}   visibilityFilter
- *                      Passed from @param {String} visibilityFilter
- *                       
- *    @param {Function} onFilterClick
- *                      Passed to FilterLink @param {Function} onClick
- *                      Dispatch 'SET_VISIBILITY_FILTER' action
- *  TodoApp
- *    @param {Array}    todos
- *                      store.getState().todos
- *    @param {String}   visibilityFilter
- *                      store.getState().visibilityFilter
- */
+// It either as a presentational components or 
+// as a container components because it doesn't fit either category
+// The input and the button are the presentational part,
+// but dispatching an action onClick is the behavior 
+// which is usually specified by the container.
+const AddTodo = () => {
+  let input
+  return(
+    <div>
+      <input ref={node => {
+        input = node
+      }} />
+      <button onClick={() => {
+        store.dispatch({
+          type: 'ADD_TODO',
+          id: nextTodoId++,
+          text: input.value
+        })
+        input.value = ''
+      }}>
+        Add Todo
+      </button>
+    </div>)
+}
 
 // Purely presentational component
 const Todo = ({onClick, completed, text}) => (
@@ -141,31 +121,44 @@ const TodoList = ({ todos, onTodoClick }) => (
   </ul>
 )
 
-const AddTodo = ({onAddClick}) => {
-  let input
-  return(
-    <div>
-      <input ref={node => {
-        input = node
-      }} />
-      <button onClick={() => {
-        onAddClick(input.value)
-        input.value = ''
-      }}>
-        Add Todo
-      </button>
-    </div>)
+class VisibleTodoList extends Component {
+  componentDidMount() {
+    this.unsubscribe = store.subscribe(() =>
+      this.forceUpdate()
+    )
+  }
+  componentWillUnMount() {
+    this.unsubscribe()
+  }
+  render () {
+    const props = this.props
+    const state = store.getState()
+    return (
+      <TodoList
+        todos={
+          getVisibleTodos(
+            state.todos,
+            state.visibilityFilter
+          )}
+        onTodoClick={id =>
+          store.dispatch({
+            type: 'TOGGLE_TODO',
+            id
+          })}
+      />
+    )
+  }
 }
 
-const FilterLink = ({filter, currentFilter, children, onClick}) => {
-  if (filter === currentFilter) {
+const Link = ({active, children, onClick}) => {
+  if (active) {
     return <span>{children}</span>
   }
   return (
     <a href="#"
       onClick={e => {
         e.preventDefault()
-        onClick(filter)
+        onClick()
       }}
     >
       {children}
@@ -173,89 +166,69 @@ const FilterLink = ({filter, currentFilter, children, onClick}) => {
   )
 }
 
-const Footer = ({ visibilityFilter, onFilterClick }) => (
+// Container Component 
+// provide data and behavior for the presentational component
+class FilterLink extends Component {
+  componentDidMount() {
+    this.unsubscribe = store.subscribe(() =>
+      this.forceUpdate()
+    )
+  }
+  componentWillUnMount() {
+    this.unsubscribe()
+  }
+  render() {
+    const props = this.props
+    const state = store.getState()
+    return (
+      <Link
+        active={props.filter === state.visibilityFilter}
+        onClick={() => 
+          store.dispatch({
+            type: 'SET_VISIBILITY_FILTER',
+            filter: props.filter
+          })}
+      >
+        {props.children}
+      </Link>
+    )
+  }
+}
+
+const Footer = () => (
   <p>
     Show:
     {' '}
     <FilterLink
       filter='SHOW_ALL'
-      currentFilter={visibilityFilter}
-      onClick={onFilterClick}
     >
       ALL
     </FilterLink>
     {' '}
     <FilterLink
       filter='SHOW_ACTIVE'
-      currentFilter={visibilityFilter}
-      onClick={onFilterClick}
     >
       ACTIVE
     </FilterLink>
     {' '}
     <FilterLink
       filter='SHOW_COMPLETED'
-      currentFilter={visibilityFilter}
-      onClick={onFilterClick}
     >
       COMPLETED
     </FilterLink>
   </p>
 )
 
-const TodoApp = ({
-  todos,
-  visibilityFilter
-}) => (
+const TodoApp = () => (
   <div>
-    <AddTodo
-      onAddClick={text => 
-        store.dispatch({
-          type: 'ADD_TODO',
-          id: nextTodoId++,
-          text
-        })
-      }
-    />
-    <TodoList
-      todos={
-        getVisibleTodos(
-          todos,
-          visibilityFilter
-        )
-      }
-      onTodoClick={id =>
-        store.dispatch({
-          type:'TOGGLE_TODO',
-          id
-        })
-      }
-    />
-    <Footer
-      visibilityFilter={visibilityFilter}
-      onFilterClick={filter =>
-        store.dispatch({
-          type: 'SET_VISIBILITY_FILTER',
-          filter
-        })
-      }
-    />
+    <AddTodo />
+    <VisibleTodoList />
+    <Footer />
   </div>
 )
-
-
 /*** Compenents end ***/
 
-const render = () => {
-  ReactDOM.render(
-    <TodoApp
-      {...store.getState()}
-    />
-    ,
-    document.getElementById('root')
-  )
-}
-
-render()
-
-store.subscribe(render)
+ReactDOM.render(
+  <TodoApp/>,
+  document.getElementById('root')
+)
