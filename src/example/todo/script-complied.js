@@ -8,12 +8,18 @@ function _possibleConstructorReturn(self, call) { if (!self) { throw new Referen
 
 function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
 
+var _Redux = Redux,
+    combineReducers = _Redux.combineReducers,
+    createStore = _Redux.createStore;
+var _React = React,
+    Component = _React.Component;
 /**
  * Reducers
  *  todo
  *  todos
  *  visibilityFilter
  */
+
 var todo = function todo(state, action) {
   switch (action.type) {
     case 'ADD_TODO':
@@ -64,20 +70,9 @@ var visibilityFilter = function visibilityFilter() {
 };
 /**** reducers end ****/
 
-var _Redux = Redux,
-    combineReducers = _Redux.combineReducers;
-var _Redux2 = Redux,
-    createStore = _Redux2.createStore;
-var _React = React,
-    Component = _React.Component;
-
-
-var todoApp = combineReducers({
-  todos: todos,
-  visibilityFilter: visibilityFilter
-});
-
-var store = createStore(todoApp);
+// we can remove it and pass it as props into the <todoApp />
+// const todoApp = combineReducers({ todos, visibilityFilter })
+// const store = createStore(todoApp)
 
 var getVisibleTodos = function getVisibleTodos(todos, filter) {
   switch (filter) {
@@ -100,7 +95,12 @@ var nextTodoId = 0;
 // The input and the button are the presentational part,
 // but dispatching an action onClick is the behavior 
 // which is usually specified by the container.
-var AddTodo = function AddTodo() {
+
+// Functional Component
+// The second argument is context
+var AddTodo = function AddTodo(props, _ref) {
+  var store = _ref.store;
+
   var input = void 0;
   return React.createElement(
     'div',
@@ -122,12 +122,20 @@ var AddTodo = function AddTodo() {
     )
   );
 };
+// **KEEP IN YOUR MIND**
+// IF YOU DON'T SPECIFY THE CONTEXTTYPES
+// YOU **WON'T** RECEIVE CONTEXT
+
+// we will use context from Provider so we have to do this.
+AddTodo.contextTypes = {
+  store: React.PropTypes.object
+};
 
 // Purely presentational component
-var Todo = function Todo(_ref) {
-  var onClick = _ref.onClick,
-      completed = _ref.completed,
-      text = _ref.text;
+var Todo = function Todo(_ref2) {
+  var onClick = _ref2.onClick,
+      completed = _ref2.completed,
+      text = _ref2.text;
   return React.createElement(
     'li',
     {
@@ -140,9 +148,9 @@ var Todo = function Todo(_ref) {
   );
 };
 
-var TodoList = function TodoList(_ref2) {
-  var todos = _ref2.todos,
-      onTodoClick = _ref2.onTodoClick;
+var TodoList = function TodoList(_ref3) {
+  var todos = _ref3.todos,
+      onTodoClick = _ref3.onTodoClick;
   return React.createElement(
     'ul',
     null,
@@ -158,6 +166,13 @@ var TodoList = function TodoList(_ref2) {
   );
 };
 
+/**
+ * Top level - Container components
+ * VisibleTodoList
+ *     ---TodoList
+ *         ---Todo
+ */
+
 var VisibleTodoList = function (_Component) {
   _inherits(VisibleTodoList, _Component);
 
@@ -170,6 +185,8 @@ var VisibleTodoList = function (_Component) {
   VisibleTodoList.prototype.componentDidMount = function componentDidMount() {
     var _this2 = this;
 
+    var store = this.context.store;
+
     this.unsubscribe = store.subscribe(function () {
       return _this2.forceUpdate();
     });
@@ -180,7 +197,8 @@ var VisibleTodoList = function (_Component) {
   };
 
   VisibleTodoList.prototype.render = function render() {
-    var props = this.props;
+    var store = this.context.store;
+
     var state = store.getState();
     return React.createElement(TodoList, {
       todos: getVisibleTodos(state.todos, state.visibilityFilter),
@@ -195,11 +213,17 @@ var VisibleTodoList = function (_Component) {
 
   return VisibleTodoList;
 }(Component);
+// we will use context from Provider so we have to do this.
 
-var Link = function Link(_ref3) {
-  var active = _ref3.active,
-      children = _ref3.children,
-      _onClick = _ref3.onClick;
+
+VisibleTodoList.contextTypes = {
+  store: React.PropTypes.object
+};
+
+var Link = function Link(_ref4) {
+  var active = _ref4.active,
+      children = _ref4.children,
+      _onClick = _ref4.onClick;
 
   if (active) {
     return React.createElement(
@@ -223,6 +247,12 @@ var Link = function Link(_ref3) {
 // Container Component 
 // provide data and behavior for the presentational component
 
+/**
+ * Secondary Top level - Container components
+ * FilterLink
+ *    ---Link
+ */
+
 var FilterLink = function (_Component2) {
   _inherits(FilterLink, _Component2);
 
@@ -235,6 +265,8 @@ var FilterLink = function (_Component2) {
   FilterLink.prototype.componentDidMount = function componentDidMount() {
     var _this4 = this;
 
+    var store = this.context.store;
+
     this.unsubscribe = store.subscribe(function () {
       return _this4.forceUpdate();
     });
@@ -245,6 +277,8 @@ var FilterLink = function (_Component2) {
   };
 
   FilterLink.prototype.render = function render() {
+    var store = this.context.store;
+
     var props = this.props;
     var state = store.getState();
     return React.createElement(
@@ -264,7 +298,14 @@ var FilterLink = function (_Component2) {
 
   return FilterLink;
 }(Component);
+// we will use context from Provider so we have to do this.
 
+
+FilterLink.contextTypes = {
+  store: React.PropTypes.object
+};
+
+// presentational Compenents
 var Footer = function Footer() {
   return React.createElement(
     'p',
@@ -297,7 +338,8 @@ var Footer = function Footer() {
   );
 };
 
-var TodoApp = function TodoApp() {
+var TodoApp = function TodoApp(_ref5) {
+  var store = _ref5.store;
   return React.createElement(
     'div',
     null,
@@ -308,4 +350,60 @@ var TodoApp = function TodoApp() {
 };
 /*** Compenents end ***/
 
-ReactDOM.render(React.createElement(TodoApp, null), document.getElementById('root'));
+// After passed store as a props, we have to do repetitive stuff,
+// that add props store in every container component and child Compenents
+// which needs store to be available.
+
+// We will fix these tedious stuff later by applying API from 'react-redux'
+
+// In particular, this.props.children is a special prop,
+// typically defined by the child tags in the JSX expression rather than in the tag itself.
+
+// Problem:
+// Is there a solution that let us pass down the props through the component tree
+// without mannually do it.
+
+// SEE HERE: https://facebook.github.io/react/docs/context.html
+
+var Provider = function (_Component3) {
+  _inherits(Provider, _Component3);
+
+  function Provider() {
+    _classCallCheck(this, Provider);
+
+    return _possibleConstructorReturn(this, _Component3.apply(this, arguments));
+  }
+
+  Provider.prototype.getChildContext = function getChildContext() {
+    return {
+      store: this.props.store
+    };
+  };
+
+  Provider.prototype.render = function render() {
+    return this.props.children;
+  };
+
+  return Provider;
+}(Component);
+// we will use context so we have to do this.
+
+
+Provider.childContextTypes = {
+  store: React.PropTypes.object
+};
+
+ReactDOM.render(React.createElement(
+  Provider,
+  { store: createStore(combineReducers({ todos: todos, visibilityFilter: visibilityFilter })) },
+  React.createElement(TodoApp, null)
+), document.getElementById('root'));
+
+/**
+ * So we can notice context's mechanism is implicitly pass down the data.
+ * It's powerful.
+ * But's gloabal variable (Its nature) is not that good
+ * Unless you're using it for dependency injection, 
+ * like here when we need to make a single object available to all 
+ * components, then probably you shouldn't use context.
+ */

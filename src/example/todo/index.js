@@ -1,3 +1,5 @@
+const { combineReducers, createStore } = Redux
+const { Component } = React
 /**
  * Reducers
  *  todo
@@ -16,10 +18,10 @@ const todo = (state, action) => {
       if (state.id !== action.id) {
         return state
       }
-			return {
-				...state,
-				completed: !state.completed
-			}
+      return {
+        ...state,
+        completed: !state.completed
+      }
   }
 }
 
@@ -49,16 +51,9 @@ const visibilityFilter = (state = 'SHOW_ALL', action) => {
 }
 /**** reducers end ****/
 
-const { combineReducers } = Redux
-const { createStore } = Redux
-const { Component } = React
-
-const todoApp = combineReducers({
-  todos,
-  visibilityFilter
-})
-
-const store = createStore(todoApp)
+// we can remove it and pass it as props into the <todoApp />
+// const todoApp = combineReducers({ todos, visibilityFilter })
+// const store = createStore(todoApp)
 
 const getVisibleTodos = (todos, filter) => {
   switch (filter) {
@@ -77,7 +72,10 @@ let nextTodoId = 0
 // The input and the button are the presentational part,
 // but dispatching an action onClick is the behavior 
 // which is usually specified by the container.
-const AddTodo = () => {
+
+// Functional Component
+// The second argument is context
+const AddTodo = (props, { store }) => {
   let input
   return(
     <div>
@@ -96,9 +94,17 @@ const AddTodo = () => {
       </button>
     </div>)
 }
+// **KEEP IN YOUR MIND**
+// IF YOU DON'T SPECIFY THE CONTEXTTYPES
+// YOU **WON'T** RECEIVE CONTEXT
+
+// we will use context from Provider so we have to do this.
+AddTodo.contextTypes = {
+  store: React.PropTypes.object
+}
 
 // Purely presentational component
-const Todo = ({onClick, completed, text}) => (
+const Todo = ({ onClick, completed, text }) => (
   <li
     style={{
       textDecoration: completed ? 'line-through' : 'none',
@@ -121,8 +127,15 @@ const TodoList = ({ todos, onTodoClick }) => (
   </ul>
 )
 
+/**
+ * Top level - Container components
+ * VisibleTodoList
+ *     ---TodoList
+ *         ---Todo
+ */
 class VisibleTodoList extends Component {
   componentDidMount() {
+    const { store } = this.context
     this.unsubscribe = store.subscribe(() =>
       this.forceUpdate()
     )
@@ -131,7 +144,7 @@ class VisibleTodoList extends Component {
     this.unsubscribe()
   }
   render () {
-    const props = this.props
+    const { store } = this.context
     const state = store.getState()
     return (
       <TodoList
@@ -149,8 +162,12 @@ class VisibleTodoList extends Component {
     )
   }
 }
+// we will use context from Provider so we have to do this.
+VisibleTodoList.contextTypes = {
+  store: React.PropTypes.object
+}
 
-const Link = ({active, children, onClick}) => {
+const Link = ({ active, children, onClick }) => {
   if (active) {
     return <span>{children}</span>
   }
@@ -168,8 +185,15 @@ const Link = ({active, children, onClick}) => {
 
 // Container Component 
 // provide data and behavior for the presentational component
+
+/**
+ * Secondary Top level - Container components
+ * FilterLink
+ *    ---Link
+ */
 class FilterLink extends Component {
   componentDidMount() {
+    const { store } = this.context
     this.unsubscribe = store.subscribe(() =>
       this.forceUpdate()
     )
@@ -178,6 +202,7 @@ class FilterLink extends Component {
     this.unsubscribe()
   }
   render() {
+    const { store } = this.context
     const props = this.props
     const state = store.getState()
     return (
@@ -194,7 +219,12 @@ class FilterLink extends Component {
     )
   }
 }
+// we will use context from Provider so we have to do this.
+FilterLink.contextTypes = {
+  store: React.PropTypes.object
+}
 
+// presentational Compenents
 const Footer = () => (
   <p>
     Show:
@@ -219,7 +249,7 @@ const Footer = () => (
   </p>
 )
 
-const TodoApp = () => (
+const TodoApp = ({store}) => (
   <div>
     <AddTodo />
     <VisibleTodoList />
@@ -228,7 +258,49 @@ const TodoApp = () => (
 )
 /*** Compenents end ***/
 
+// After passed store as a props, we have to do repetitive stuff,
+// that add props store in every container component and child Compenents
+// which needs store to be available.
+
+// We will fix these tedious stuff later by applying API from 'react-redux'
+
+// In particular, this.props.children is a special prop,
+// typically defined by the child tags in the JSX expression rather than in the tag itself.
+
+// Problem:
+// Is there a solution that let us pass down the props through the component tree
+// without mannually do it.
+
+// SEE HERE: https://facebook.github.io/react/docs/context.html
+
+class Provider extends Component {
+  getChildContext() {
+    return {
+      store: this.props.store
+    }
+  }
+  render() {
+    return this.props.children
+  }
+}
+// we will use context so we have to do this.
+Provider.childContextTypes = {
+  store: React.PropTypes.object
+}
+
 ReactDOM.render(
-  <TodoApp/>,
+  <Provider store={createStore(combineReducers({todos,visibilityFilter}))}>
+    <TodoApp />
+  </Provider>,
   document.getElementById('root')
 )
+
+
+/**
+ * So we can notice context's mechanism is implicitly pass down the data.
+ * It's powerful.
+ * But's gloabal variable (Its nature) is not that good
+ * Unless you're using it for dependency injection, 
+ * like here when we need to make a single object available to all 
+ * components, then probably you shouldn't use context.
+ */
