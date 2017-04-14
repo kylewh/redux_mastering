@@ -258,35 +258,8 @@ const TodoApp = ({store}) => (
 )
 /*** Compenents end ***/
 
-// After passed store as a props, we have to do repetitive stuff,
-// that add props store in every container component and child Compenents
-// which needs store to be available.
-
-// We will fix these tedious stuff later by applying API from 'react-redux'
-
-// In particular, this.props.children is a special prop,
-// typically defined by the child tags in the JSX expression rather than in the tag itself.
-
-// Problem:
-// Is there a solution that let us pass down the props through the component tree
-// without mannually do it.
-
-// SEE HERE: https://facebook.github.io/react/docs/context.html
-
-class Provider extends Component {
-  getChildContext() {
-    return {
-      store: this.props.store
-    }
-  }
-  render() {
-    return this.props.children
-  }
-}
-// we will use context so we have to do this.
-Provider.childContextTypes = {
-  store: React.PropTypes.object
-}
+// This time we use Provider offered by React-Redux
+const { Provider } = ReactRedux
 
 ReactDOM.render(
   <Provider store={createStore(combineReducers({todos,visibilityFilter}))}>
