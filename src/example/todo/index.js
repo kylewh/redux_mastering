@@ -1,5 +1,6 @@
 const { combineReducers, createStore } = Redux
 const { Component } = React
+const { connect } = ReactRedux
 /**
  * Reducers
  *  todo
@@ -52,8 +53,8 @@ const visibilityFilter = (state = 'SHOW_ALL', action) => {
 /**** reducers end ****/
 
 // we can remove it and pass it as props into the <todoApp />
-// const todoApp = combineReducers({ todos, visibilityFilter })
 // const store = createStore(todoApp)
+
 
 const getVisibleTodos = (todos, filter) => {
   switch (filter) {
@@ -75,7 +76,11 @@ let nextTodoId = 0
 
 // Functional Component
 // The second argument is context
-const AddTodo = (props, { store }) => {
+// only needed props is dispatch
+// change const to let, because it doesn't have a container component for it
+// itself is going to be a container 
+
+let AddTodo = ({ dispatch }) => { 
   let input
   return(
     <div>
@@ -83,7 +88,7 @@ const AddTodo = (props, { store }) => {
         input = node
       }} />
       <button onClick={() => {
-        store.dispatch({
+        dispatch({
           type: 'ADD_TODO',
           id: nextTodoId++,
           text: input.value
@@ -94,14 +99,25 @@ const AddTodo = (props, { store }) => {
       </button>
     </div>)
 }
+
+// It's pretty common pattern to inject just the dispatch function. 
+// This is why if you specify null or any false value in connect 
+// as the second argument, you're going to get dispatch injected as a prop. 
+
+// The default behavior will be to not subscribe to this store 
+// and to inject just the dispatch function as a prop.
+AddTodo = connect()(AddTodo)
+
+
 // **KEEP IN YOUR MIND**
 // IF YOU DON'T SPECIFY THE CONTEXTTYPES
 // YOU **WON'T** RECEIVE CONTEXT
 
 // we will use context from Provider so we have to do this.
-AddTodo.contextTypes = {
-  store: React.PropTypes.object
-}
+// AddTodo.contextTypes = {
+//   store: React.PropTypes.object
+// }
+
 
 // Purely presentational component
 const Todo = ({ onClick, completed, text }) => (
@@ -127,45 +143,85 @@ const TodoList = ({ todos, onTodoClick }) => (
   </ul>
 )
 
-/**
- * Top level - Container components
- * VisibleTodoList
- *     ---TodoList
- *         ---Todo
- */
-class VisibleTodoList extends Component {
-  componentDidMount() {
-    const { store } = this.context
-    this.unsubscribe = store.subscribe(() =>
-      this.forceUpdate()
-    )
-  }
-  componentWillUnMount() {
-    this.unsubscribe()
-  }
-  render () {
-    const { store } = this.context
-    const state = store.getState()
-    return (
-      <TodoList
-        todos={
-          getVisibleTodos(
-            state.todos,
-            state.visibilityFilter
-          )}
-        onTodoClick={id =>
-          store.dispatch({
-            type: 'TOGGLE_TODO',
-            id
-          })}
-      />
-    )
+const mapStateToTodoListProps = (state) => {
+  return {
+    todos: getVisibleTodos(
+      state.todos,
+      state.visibilityFilter
+    ),
   }
 }
+
+const mapDispatchToTodoListProps = (dispatch) => {
+  return {
+    onTodoClick: id => {
+      dispatch({
+        type: 'TOGGLE_TODO',
+        id
+      })
+    }
+  }
+}
+
+
+// connect is a **CURRIED** function so the return value is a function.
+// using connect, we won't need to specify the contextTypes
+// connect do it for us. => @TODO I really wanna more details about it, may be later.
+// we can use it to generate container function
+// container => receive state
+
+
+// One thing to remind: 
+// Although connect is a curried function, but the amount of argument in connect
+// is fixed
+// Passing in mapStateToProps or mapDispatchToProps or both of it is totally up to you
+// Sometime our container may need to hanlde some event wrapped with dispatch
+// so we do mapDispatchToProps
+// Sometime we just want to pass in state
+// then we do mapStateToProps, it's clear :)
+// Connect will calculate the props to pass through the presentational component by merging
+// the objects returned from mapStateToProps, mapDispatchToProps, and its own props.
+const VisibleTodoList = connect(
+  mapStateToTodoListProps,
+  mapDispatchToTodoListProps
+)(TodoList)
+
+// TodoList is the target to wrap and pass the props to
+
+// using connect generate VisibleTodoList container for us ,
+// we don't need to write manually
+
+// so in the container , we did three things
+
+// 1. receive store from Provider, which is the center we store all state
+// 2. subscribe a force update function to store
+// 3. unsubscribe when component will unmount
+
+
+// class VisibleTodoList extends Component {
+//   componentDidMount() {
+//     const { store } = this.context
+//     this.unsubscribe = store.subscribe(() =>
+//       this.forceUpdate()
+//     )
+//   }
+//   componentWillUnMount() {
+//     this.unsubscribe()
+//   }
+//   render () {
+//     const { store } = this.context
+//     const state = store.getState()
+//     return (
+//       <TodoList
+//       />
+//     )
+//   }
+// }
+
 // we will use context from Provider so we have to do this.
-VisibleTodoList.contextTypes = {
-  store: React.PropTypes.object
-}
+// VisibleTodoList.contextTypes = {
+//   store: React.PropTypes.object
+// }
 
 const Link = ({ active, children, onClick }) => {
   if (active) {
@@ -260,9 +316,9 @@ const TodoApp = ({store}) => (
 
 // This time we use Provider offered by React-Redux
 const { Provider } = ReactRedux
-
+const todoApp = combineReducers({ todos, visibilityFilter })
 ReactDOM.render(
-  <Provider store={createStore(combineReducers({todos,visibilityFilter}))}>
+  <Provider store={createStore(todoApp)}>
     <TodoApp />
   </Provider>,
   document.getElementById('root')

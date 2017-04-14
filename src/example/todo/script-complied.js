@@ -13,6 +13,8 @@ var _Redux = Redux,
     createStore = _Redux.createStore;
 var _React = React,
     Component = _React.Component;
+var _ReactRedux = ReactRedux,
+    connect = _ReactRedux.connect;
 /**
  * Reducers
  *  todo
@@ -71,8 +73,8 @@ var visibilityFilter = function visibilityFilter() {
 /**** reducers end ****/
 
 // we can remove it and pass it as props into the <todoApp />
-// const todoApp = combineReducers({ todos, visibilityFilter })
 // const store = createStore(todoApp)
+
 
 var getVisibleTodos = function getVisibleTodos(todos, filter) {
   switch (filter) {
@@ -98,8 +100,12 @@ var nextTodoId = 0;
 
 // Functional Component
 // The second argument is context
-var AddTodo = function AddTodo(props, _ref) {
-  var store = _ref.store;
+// only needed props is dispatch
+// change const to let, because it doesn't have a container component for it
+// itself is going to be a container 
+
+var AddTodo = function AddTodo(_ref) {
+  var dispatch = _ref.dispatch;
 
   var input = void 0;
   return React.createElement(
@@ -111,7 +117,7 @@ var AddTodo = function AddTodo(props, _ref) {
     React.createElement(
       'button',
       { onClick: function onClick() {
-          store.dispatch({
+          dispatch({
             type: 'ADD_TODO',
             id: nextTodoId++,
             text: input.value
@@ -122,14 +128,24 @@ var AddTodo = function AddTodo(props, _ref) {
     )
   );
 };
+
+// It's pretty common pattern to inject just the dispatch function. 
+// This is why if you specify null or any false value in connect 
+// as the second argument, you're going to get dispatch injected as a prop. 
+
+// The default behavior will be to not subscribe to this store 
+// and to inject just the dispatch function as a prop.
+AddTodo = connect()(AddTodo);
+
 // **KEEP IN YOUR MIND**
 // IF YOU DON'T SPECIFY THE CONTEXTTYPES
 // YOU **WON'T** RECEIVE CONTEXT
 
 // we will use context from Provider so we have to do this.
-AddTodo.contextTypes = {
-  store: React.PropTypes.object
-};
+// AddTodo.contextTypes = {
+//   store: React.PropTypes.object
+// }
+
 
 // Purely presentational component
 var Todo = function Todo(_ref2) {
@@ -166,59 +182,78 @@ var TodoList = function TodoList(_ref3) {
   );
 };
 
-/**
- * Top level - Container components
- * VisibleTodoList
- *     ---TodoList
- *         ---Todo
- */
-
-var VisibleTodoList = function (_Component) {
-  _inherits(VisibleTodoList, _Component);
-
-  function VisibleTodoList() {
-    _classCallCheck(this, VisibleTodoList);
-
-    return _possibleConstructorReturn(this, _Component.apply(this, arguments));
-  }
-
-  VisibleTodoList.prototype.componentDidMount = function componentDidMount() {
-    var _this2 = this;
-
-    var store = this.context.store;
-
-    this.unsubscribe = store.subscribe(function () {
-      return _this2.forceUpdate();
-    });
+var mapStateToTodoListProps = function mapStateToTodoListProps(state) {
+  return {
+    todos: getVisibleTodos(state.todos, state.visibilityFilter)
   };
-
-  VisibleTodoList.prototype.componentWillUnMount = function componentWillUnMount() {
-    this.unsubscribe();
-  };
-
-  VisibleTodoList.prototype.render = function render() {
-    var store = this.context.store;
-
-    var state = store.getState();
-    return React.createElement(TodoList, {
-      todos: getVisibleTodos(state.todos, state.visibilityFilter),
-      onTodoClick: function onTodoClick(id) {
-        return store.dispatch({
-          type: 'TOGGLE_TODO',
-          id: id
-        });
-      }
-    });
-  };
-
-  return VisibleTodoList;
-}(Component);
-// we will use context from Provider so we have to do this.
-
-
-VisibleTodoList.contextTypes = {
-  store: React.PropTypes.object
 };
+
+var mapDispatchToTodoListProps = function mapDispatchToTodoListProps(dispatch) {
+  return {
+    onTodoClick: function onTodoClick(id) {
+      dispatch({
+        type: 'TOGGLE_TODO',
+        id: id
+      });
+    }
+  };
+};
+
+// connect is a **CURRIED** function so the return value is a function.
+// using connect, we won't need to specify the contextTypes
+// connect do it for us. => @TODO I really wanna more details about it, may be later.
+// we can use it to generate container function
+// container => receive state
+
+
+// One thing to remind: 
+// Although connect is a curried function, but the amount of argument in connect
+// is fixed
+// Passing in mapStateToProps or mapDispatchToProps or both of it is totally up to you
+// Sometime our container may need to hanlde some event wrapped with dispatch
+// so we do mapDispatchToProps
+// Sometime we just want to pass in state
+// then we do mapStateToProps, it's clear :)
+// Connect will calculate the props to pass through the presentational component by merging
+// the objects returned from mapStateToProps, mapDispatchToProps, and its own props.
+var VisibleTodoList = connect(mapStateToTodoListProps, mapDispatchToTodoListProps)(TodoList);
+
+// TodoList is the target to wrap and pass the props to
+
+// using connect generate VisibleTodoList container for us ,
+// we don't need to write manually
+
+// so in the container , we did three things
+
+// 1. receive store from Provider, which is the center we store all state
+// 2. subscribe a force update function to store
+// 3. unsubscribe when component will unmount
+
+
+// class VisibleTodoList extends Component {
+//   componentDidMount() {
+//     const { store } = this.context
+//     this.unsubscribe = store.subscribe(() =>
+//       this.forceUpdate()
+//     )
+//   }
+//   componentWillUnMount() {
+//     this.unsubscribe()
+//   }
+//   render () {
+//     const { store } = this.context
+//     const state = store.getState()
+//     return (
+//       <TodoList
+//       />
+//     )
+//   }
+// }
+
+// we will use context from Provider so we have to do this.
+// VisibleTodoList.contextTypes = {
+//   store: React.PropTypes.object
+// }
 
 var Link = function Link(_ref4) {
   var active = _ref4.active,
@@ -253,22 +288,22 @@ var Link = function Link(_ref4) {
  *    ---Link
  */
 
-var FilterLink = function (_Component2) {
-  _inherits(FilterLink, _Component2);
+var FilterLink = function (_Component) {
+  _inherits(FilterLink, _Component);
 
   function FilterLink() {
     _classCallCheck(this, FilterLink);
 
-    return _possibleConstructorReturn(this, _Component2.apply(this, arguments));
+    return _possibleConstructorReturn(this, _Component.apply(this, arguments));
   }
 
   FilterLink.prototype.componentDidMount = function componentDidMount() {
-    var _this4 = this;
+    var _this2 = this;
 
     var store = this.context.store;
 
     this.unsubscribe = store.subscribe(function () {
-      return _this4.forceUpdate();
+      return _this2.forceUpdate();
     });
   };
 
@@ -351,13 +386,13 @@ var TodoApp = function TodoApp(_ref5) {
 /*** Compenents end ***/
 
 // This time we use Provider offered by React-Redux
-var _ReactRedux = ReactRedux,
-    Provider = _ReactRedux.Provider;
+var _ReactRedux2 = ReactRedux,
+    Provider = _ReactRedux2.Provider;
 
-
+var todoApp = combineReducers({ todos: todos, visibilityFilter: visibilityFilter });
 ReactDOM.render(React.createElement(
   Provider,
-  { store: createStore(combineReducers({ todos: todos, visibilityFilter: visibilityFilter })) },
+  { store: createStore(todoApp) },
   React.createElement(TodoApp, null)
 ), document.getElementById('root'));
 
