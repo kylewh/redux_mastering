@@ -1,7 +1,9 @@
-// Reducer composition => separate the reducer as possible
-// It will make your reducer logic clear and enhance the reuseability
-// Micro reducer: only deal with state of single todo item,
-// that's why we extract this logic from the previous reducer with obscure logic
+/**
+ * Reducers
+ *  todo
+ *  todos
+ *  visibilityFilter
+ */
 const todo = (state, action) => {
   switch (action.type) {
     case 'ADD_TODO':
@@ -21,7 +23,6 @@ const todo = (state, action) => {
   }
 }
 
-
 const todos = (state = [], action) => {
   switch (action.type) {
     case 'ADD_TODO':
@@ -38,10 +39,6 @@ const todos = (state = [], action) => {
   }
 }
 
-// If we want to add more information such as an filter into the state,
-// we need to create another reducer and mix the two reducer into one
-// Let's go
-
 const visibilityFilter = (state = 'SHOW_ALL', action) => {
   switch (action.type) {
     case 'SET_VISIBILITY_FILTER':
@@ -51,60 +48,60 @@ const visibilityFilter = (state = 'SHOW_ALL', action) => {
   }
 }
 
-// You may notice, initially state.todos is undefined,
-// as the previous example when we implement createStore,
-// we know once an action is dispatched, the state will --
-// be updated by getting a new state returned from reducer call.
-// so after one dispatch, the state will have the key todos & visibilityFilter
-
-// By implement a combined reducer by hand, 
-// redux offered an api called combineReducers
-
-// const todoApp = (state={}, action) => {
-//   return {
-//     todos: todos(state.todos, action),
-//     visibilityFilter: visibilityFilter(state.visibilityFilter, action)
-//   }
-// }
-
-// const { combineReducers } = Redux
-
-// In order to fully understand what's combineReducers do
-// Let's try to implement it
-
-/**
- * combineReducers is a reducer
- * @param  {Object}   reducers: { reducer1: reducer1, reducer2: reducer2 }
- * @return {function} mixed reducer
- */
-const combineReducers = (reducers) => {
-  return (state ={}, action) => {
-    return Object.keys(reducers).reduce(
-      (nextState, key) => { // When gave an initial value(here is {}), nextState will be {}
-        nextState[key] = reducers[key](state[key], action)
-        // This is actually very similar to 'todos: todos(state.todos, action)'
-        return nextState
-      },
-      {} //initial value => offered a container for mixed state
-    )
-  }
-}
+/**** reducers end ****/
+const { combineReducers } = Redux
+const { createStore } = Redux
+const { Component } = React
 
 const todoApp = combineReducers({
   todos,
   visibilityFilter
-}) //ES6 syntax suugar => { todos: todos, visibilityFilter: visibilityFilter }
+})
 
-const { createStore } = Redux
+const store = createStore(todoApp)
 
-const store = createStore(todoApp) // change todo to todoApp
-
-const { Component } = React
+const getVisibleTodos = (todos, filter) => {
+  switch (filter) {
+    case 'SHOW_ALL':
+      return todos
+    case 'SHOW_COMPLETED':
+      return todos.filter(t => t.completed)
+    case 'SHOW_ACTIVE':
+      return todos.filter(t => !t.completed)
+  }
+}
 
 let nextTodoId = 0
-// Define TodoApp component
+
+/**
+ * Compenents
+ *  FilterLink
+ *  TodoApp
+ */
+
+const FilterLink = ({filter, currentFilter, children}) => {
+  if (filter === currentFilter) {
+    return <span>{children}</span>
+  }
+  return (
+    <a href="#"
+      onClick={e => {
+        e.preventDefault()
+        console.log(filter)
+        store.dispatch({
+          type: 'SET_VISIBILITY_FILTER',
+          filter
+        })
+      }}
+    >
+      {children}
+    </a>
+  )
+}
+
 class TodoApp extends Component {
   render () {
+    const visibleTodos = getVisibleTodos(this.props.todos, this.props.visibilityFilter)
     return (
       <div>
         <input ref={node => {
@@ -121,21 +118,58 @@ class TodoApp extends Component {
           Add Todo
         </button>
         <ul>
-          {this.props.todos.map(todo =>
-            <li key={todo.id}>
+          {visibleTodos.map(todo =>
+            <li
+              style={{
+                textDecoration: todo.completed ? 'line-through' : 'none',
+                cursor: 'pointer'
+              }}
+              key={todo.id}
+              onClick={() => {
+                store.dispatch({
+                  type: 'TOGGLE_TODO',
+                  id: todo.id
+                })
+              }}>
               {todo.text}
             </li>
           )}
         </ul>
+        <p>
+          Show:
+          {' '}
+          <FilterLink
+            filter='SHOW_ALL'
+            currentFilter={this.props.visibilityFilter}
+          >
+            ALL
+          </FilterLink>
+          {' '}
+          <FilterLink
+            filter='SHOW_ACTIVE'
+            currentFilter={this.props.visibilityFilter}
+          >
+            ACTIVE
+          </FilterLink>
+          {' '}
+          <FilterLink
+            filter='SHOW_COMPLETED'
+            currentFilter={this.props.visibilityFilter}
+          >
+            COMPLETED
+          </FilterLink>
+        </p>
       </div>
     )
   }
 }
 
+/*** Compenents end ***/
+
 const render = () => {
   ReactDOM.render(
     <TodoApp
-      todos={store.getState().todos}
+      {...store.getState()}
     />
     ,
     document.getElementById('root')

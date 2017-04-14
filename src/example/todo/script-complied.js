@@ -8,10 +8,12 @@ function _possibleConstructorReturn(self, call) { if (!self) { throw new Referen
 
 function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
 
-// Reducer composition => separate the reducer as possible
-// It will make your reducer logic clear and enhance the reuseability
-// Micro reducer: only deal with state of single todo item,
-// that's why we extract this logic from the previous reducer with obscure logic
+/**
+ * Reducers
+ *  todo
+ *  todos
+ *  visibilityFilter
+ */
 var todo = function todo(state, action) {
   switch (action.type) {
     case 'ADD_TODO':
@@ -49,10 +51,6 @@ var todos = function todos() {
   }
 };
 
-// If we want to add more information such as an filter into the state,
-// we need to create another reducer and mix the two reducer into one
-// Let's go
-
 var visibilityFilter = function visibilityFilter() {
   var state = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : 'SHOW_ALL';
   var action = arguments[1];
@@ -65,64 +63,72 @@ var visibilityFilter = function visibilityFilter() {
   }
 };
 
-// You may notice, initially state.todos is undefined,
-// as the previous example when we implement createStore,
-// we know once an action is dispatched, the state will --
-// be updated by getting a new state returned from reducer call.
-// so after one dispatch, the state will have the key todos & visibilityFilter
-
-// By implement a combined reducer by hand, 
-// redux offered an api called combineReducers
-
-// const todoApp = (state={}, action) => {
-//   return {
-//     todos: todos(state.todos, action),
-//     visibilityFilter: visibilityFilter(state.visibilityFilter, action)
-//   }
-// }
-
-// const { combineReducers } = Redux
-
-// In order to fully understand what's combineReducers do
-// Let's try to implement it
-
-/**
- * combineReducers is a reducer
- * @param  {Object}   reducers: { reducer1: reducer1, reducer2: reducer2 }
- * @return {function} mixed reducer
- */
-var combineReducers = function combineReducers(reducers) {
-  return function () {
-    var state = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
-    var action = arguments[1];
-
-    return Object.keys(reducers).reduce(function (nextState, key) {
-      // When gave an initial value(here is {}), nextState will be {}
-      nextState[key] = reducers[key](state[key], action);
-      // This is actually very similar to 'todos: todos(state.todos, action)'
-      return nextState;
-    }, {} //initial value => offered a container for mixed state
-    );
-  };
-};
-
-var todoApp = combineReducers({
-  todos: todos,
-  visibilityFilter: visibilityFilter
-}); //ES6 syntax suugar => { todos: todos, visibilityFilter: visibilityFilter }
-
+/**** reducers end ****/
 var _Redux = Redux,
-    createStore = _Redux.createStore;
-
-
-var store = createStore(todoApp); // change todo to todoApp
-
+    combineReducers = _Redux.combineReducers;
+var _Redux2 = Redux,
+    createStore = _Redux2.createStore;
 var _React = React,
     Component = _React.Component;
 
 
+var todoApp = combineReducers({
+  todos: todos,
+  visibilityFilter: visibilityFilter
+});
+
+var store = createStore(todoApp);
+
+var getVisibleTodos = function getVisibleTodos(todos, filter) {
+  switch (filter) {
+    case 'SHOW_ALL':
+      return todos;
+    case 'SHOW_COMPLETED':
+      return todos.filter(function (t) {
+        return t.completed;
+      });
+    case 'SHOW_ACTIVE':
+      return todos.filter(function (t) {
+        return !t.completed;
+      });
+  }
+};
+
 var nextTodoId = 0;
-// Define TodoApp component
+
+/**
+ * Compenents
+ *  FilterLink
+ *  TodoApp
+ */
+
+var FilterLink = function FilterLink(_ref) {
+  var filter = _ref.filter,
+      currentFilter = _ref.currentFilter,
+      children = _ref.children;
+
+  if (filter === currentFilter) {
+    return React.createElement(
+      'span',
+      null,
+      children
+    );
+  }
+  return React.createElement(
+    'a',
+    { href: '#',
+      onClick: function onClick(e) {
+        e.preventDefault();
+        console.log(filter);
+        store.dispatch({
+          type: 'SET_VISIBILITY_FILTER',
+          filter: filter
+        });
+      }
+    },
+    children
+  );
+};
 
 var TodoApp = function (_Component) {
   _inherits(TodoApp, _Component);
@@ -136,6 +142,7 @@ var TodoApp = function (_Component) {
   TodoApp.prototype.render = function render() {
     var _this2 = this;
 
+    var visibleTodos = getVisibleTodos(this.props.todos, this.props.visibilityFilter);
     return React.createElement(
       'div',
       null,
@@ -157,13 +164,56 @@ var TodoApp = function (_Component) {
       React.createElement(
         'ul',
         null,
-        this.props.todos.map(function (todo) {
+        visibleTodos.map(function (todo) {
           return React.createElement(
             'li',
-            { key: todo.id },
+            {
+              style: {
+                textDecoration: todo.completed ? 'line-through' : 'none',
+                cursor: 'pointer'
+              },
+              key: todo.id,
+              onClick: function onClick() {
+                store.dispatch({
+                  type: 'TOGGLE_TODO',
+                  id: todo.id
+                });
+              } },
             todo.text
           );
         })
+      ),
+      React.createElement(
+        'p',
+        null,
+        'Show:',
+        ' ',
+        React.createElement(
+          FilterLink,
+          {
+            filter: 'SHOW_ALL',
+            currentFilter: this.props.visibilityFilter
+          },
+          'ALL'
+        ),
+        ' ',
+        React.createElement(
+          FilterLink,
+          {
+            filter: 'SHOW_ACTIVE',
+            currentFilter: this.props.visibilityFilter
+          },
+          'ACTIVE'
+        ),
+        ' ',
+        React.createElement(
+          FilterLink,
+          {
+            filter: 'SHOW_COMPLETED',
+            currentFilter: this.props.visibilityFilter
+          },
+          'COMPLETED'
+        )
       )
     );
   };
@@ -171,10 +221,10 @@ var TodoApp = function (_Component) {
   return TodoApp;
 }(Component);
 
+/*** Compenents end ***/
+
 var render = function render() {
-  ReactDOM.render(React.createElement(TodoApp, {
-    todos: store.getState().todos
-  }), document.getElementById('root'));
+  ReactDOM.render(React.createElement(TodoApp, store.getState()), document.getElementById('root'));
 };
 
 render();
