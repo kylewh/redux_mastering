@@ -2,12 +2,6 @@
 
 var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
 
-function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-
-function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
-
-function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
-
 /**
  * Reducers
  *  todo
@@ -62,8 +56,8 @@ var visibilityFilter = function visibilityFilter() {
       return state;
   }
 };
-
 /**** reducers end ****/
+
 var _Redux = Redux,
     combineReducers = _Redux.combineReducers;
 var _Redux2 = Redux,
@@ -98,14 +92,109 @@ var nextTodoId = 0;
 
 /**
  * Compenents
+ *  Todo
+ *    @param {Function} onClick
+ *                      Dispatch 'TOGGLE_TODO' action
+ *    @param {Boolean}  completed
+ *                      When todo was clicked, toggle action will invert its state
+ *    @param {String}   text
+ *                      Content of todoItem, from AddTodo's loacal variable 'input'
+ *                      input refers to input element by using ref={node => input = node}
+ * 
+ *  TodoList
+ *    @param {Array}    todos
+ *                      Todos array, but was filtered by visibilityFilter
+ *    @param {Function} onTodoClick
+ *                      Passed to Todo as @param {Function} onClick
+ *                      
+ *  AddTodo
+ *    @param {Function} onAddClick
+ *                      Dispatch 'ADD_TODO' action
+ * 
  *  FilterLink
+ *    @param {String}   filter
+ *                      Specify the state of visibilityFilter
+ *    @param {String}   currentFilter
+ *                      Passed from Footer @param {String} visibilityFilter
+ *    @param {Function} onClick
+ *                      @param {String} filter => @param {String} filter
+ *                      Dispatch 'SET_VISIBILITY_FILTER' action
+ * 
+ *  Footer
+ *    @param {String}   visibilityFilter
+ *                      Passed from @param {String} visibilityFilter
+ *                       
+ *    @param {Function} onFilterClick
+ *                      Passed to FilterLink @param {Function} onClick
+ *                      Dispatch 'SET_VISIBILITY_FILTER' action
  *  TodoApp
+ *    @param {Array}    todos
+ *                      store.getState().todos
+ *    @param {String}   visibilityFilter
+ *                      store.getState().visibilityFilter
  */
 
-var FilterLink = function FilterLink(_ref) {
-  var filter = _ref.filter,
-      currentFilter = _ref.currentFilter,
-      children = _ref.children;
+// Purely presentational component
+var Todo = function Todo(_ref) {
+  var onClick = _ref.onClick,
+      completed = _ref.completed,
+      text = _ref.text;
+  return React.createElement(
+    'li',
+    {
+      style: {
+        textDecoration: completed ? 'line-through' : 'none',
+        cursor: 'pointer'
+      },
+      onClick: onClick },
+    text
+  );
+};
+
+var TodoList = function TodoList(_ref2) {
+  var todos = _ref2.todos,
+      onTodoClick = _ref2.onTodoClick;
+  return React.createElement(
+    'ul',
+    null,
+    todos.map(function (todo) {
+      return React.createElement(Todo, _extends({
+        key: todo.id
+      }, todo, {
+        onClick: function onClick() {
+          return onTodoClick(todo.id);
+        }
+      }));
+    })
+  );
+};
+
+var AddTodo = function AddTodo(_ref3) {
+  var onAddClick = _ref3.onAddClick;
+
+  var input = void 0;
+  return React.createElement(
+    'div',
+    null,
+    React.createElement('input', { ref: function ref(node) {
+        input = node;
+      } }),
+    React.createElement(
+      'button',
+      { onClick: function onClick() {
+          onAddClick(input.value);
+          input.value = '';
+        } },
+      'Add Todo'
+    )
+  );
+};
+
+var FilterLink = function FilterLink(_ref4) {
+  var filter = _ref4.filter,
+      currentFilter = _ref4.currentFilter,
+      children = _ref4.children,
+      _onClick = _ref4.onClick;
 
   if (filter === currentFilter) {
     return React.createElement(
@@ -119,107 +208,88 @@ var FilterLink = function FilterLink(_ref) {
     { href: '#',
       onClick: function onClick(e) {
         e.preventDefault();
-        console.log(filter);
-        store.dispatch({
-          type: 'SET_VISIBILITY_FILTER',
-          filter: filter
-        });
+        _onClick(filter);
       }
     },
     children
   );
 };
 
-var TodoApp = function (_Component) {
-  _inherits(TodoApp, _Component);
+var Footer = function Footer(_ref5) {
+  var visibilityFilter = _ref5.visibilityFilter,
+      onFilterClick = _ref5.onFilterClick;
+  return React.createElement(
+    'p',
+    null,
+    'Show:',
+    ' ',
+    React.createElement(
+      FilterLink,
+      {
+        filter: 'SHOW_ALL',
+        currentFilter: visibilityFilter,
+        onClick: onFilterClick
+      },
+      'ALL'
+    ),
+    ' ',
+    React.createElement(
+      FilterLink,
+      {
+        filter: 'SHOW_ACTIVE',
+        currentFilter: visibilityFilter,
+        onClick: onFilterClick
+      },
+      'ACTIVE'
+    ),
+    ' ',
+    React.createElement(
+      FilterLink,
+      {
+        filter: 'SHOW_COMPLETED',
+        currentFilter: visibilityFilter,
+        onClick: onFilterClick
+      },
+      'COMPLETED'
+    )
+  );
+};
 
-  function TodoApp() {
-    _classCallCheck(this, TodoApp);
-
-    return _possibleConstructorReturn(this, _Component.apply(this, arguments));
-  }
-
-  TodoApp.prototype.render = function render() {
-    var _this2 = this;
-
-    var visibleTodos = getVisibleTodos(this.props.todos, this.props.visibilityFilter);
-    return React.createElement(
-      'div',
-      null,
-      React.createElement('input', { ref: function ref(node) {
-          _this2.input = node;
-        } }),
-      React.createElement(
-        'button',
-        { onClick: function onClick() {
-            store.dispatch({
-              type: 'ADD_TODO',
-              text: _this2.input.value,
-              id: nextTodoId++
-            });
-            _this2.input.value = '';
-          } },
-        'Add Todo'
-      ),
-      React.createElement(
-        'ul',
-        null,
-        visibleTodos.map(function (todo) {
-          return React.createElement(
-            'li',
-            {
-              style: {
-                textDecoration: todo.completed ? 'line-through' : 'none',
-                cursor: 'pointer'
-              },
-              key: todo.id,
-              onClick: function onClick() {
-                store.dispatch({
-                  type: 'TOGGLE_TODO',
-                  id: todo.id
-                });
-              } },
-            todo.text
-          );
-        })
-      ),
-      React.createElement(
-        'p',
-        null,
-        'Show:',
-        ' ',
-        React.createElement(
-          FilterLink,
-          {
-            filter: 'SHOW_ALL',
-            currentFilter: this.props.visibilityFilter
-          },
-          'ALL'
-        ),
-        ' ',
-        React.createElement(
-          FilterLink,
-          {
-            filter: 'SHOW_ACTIVE',
-            currentFilter: this.props.visibilityFilter
-          },
-          'ACTIVE'
-        ),
-        ' ',
-        React.createElement(
-          FilterLink,
-          {
-            filter: 'SHOW_COMPLETED',
-            currentFilter: this.props.visibilityFilter
-          },
-          'COMPLETED'
-        )
-      )
-    );
-  };
-
-  return TodoApp;
-}(Component);
+var TodoApp = function TodoApp(_ref6) {
+  var todos = _ref6.todos,
+      visibilityFilter = _ref6.visibilityFilter;
+  return React.createElement(
+    'div',
+    null,
+    React.createElement(AddTodo, {
+      onAddClick: function onAddClick(text) {
+        return store.dispatch({
+          type: 'ADD_TODO',
+          id: nextTodoId++,
+          text: text
+        });
+      }
+    }),
+    React.createElement(TodoList, {
+      todos: getVisibleTodos(todos, visibilityFilter),
+      onTodoClick: function onTodoClick(id) {
+        return store.dispatch({
+          type: 'TOGGLE_TODO',
+          id: id
+        });
+      }
+    }),
+    React.createElement(Footer, {
+      visibilityFilter: visibilityFilter,
+      onFilterClick: function onFilterClick(filter) {
+        return store.dispatch({
+          type: 'SET_VISIBILITY_FILTER',
+          filter: filter
+        });
+      }
+    })
+  );
+};
 
 /*** Compenents end ***/
 
