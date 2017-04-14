@@ -1,12 +1,7 @@
 const { combineReducers, createStore } = Redux
 const { Component } = React
-const { connect } = ReactRedux
-/**
- * Reducers
- *  todo
- *  todos
- *  visibilityFilter
- */
+const { Provider, connect } = ReactRedux
+
 const todo = (state, action) => {
   switch (action.type) {
     case 'ADD_TODO':
@@ -32,8 +27,6 @@ const todos = (state = [], action) => {
       return [
         ...state,
         todo(undefined, action) 
-        // Notice that when action.type is 'ADD_TODO'
-        // We only need data from action, so we can just pass undefine into todo
       ]
     case 'TOGGLE_TODO':
       return state.map( t => todo(t, action))
@@ -50,10 +43,6 @@ const visibilityFilter = (state = 'SHOW_ALL', action) => {
       return state
   }
 }
-/**** reducers end ****/
-
-// we can remove it and pass it as props into the <todoApp />
-// const store = createStore(todoApp)
 
 
 const getVisibleTodos = (todos, filter) => {
@@ -68,17 +57,31 @@ const getVisibleTodos = (todos, filter) => {
 }
 
 let nextTodoId = 0
-// It either as a presentational components or 
-// as a container components because it doesn't fit either category
-// The input and the button are the presentational part,
-// but dispatching an action onClick is the behavior 
-// which is usually specified by the container.
 
-// Functional Component
-// The second argument is context
-// only needed props is dispatch
-// change const to let, because it doesn't have a container component for it
-// itself is going to be a container 
+// action creator
+const addTodo = (text) => {
+  return {
+    type: 'ADD_TODO',
+    id: nextTodoId++,
+    text
+  }
+}
+
+// action creator
+const toggleTodo = (id) => {
+  return {
+    type: 'TOGGLE_TODO',
+    id
+  }
+}
+
+// action creator
+const setVisibilityFilter = (filter) => {
+  return {
+    type: 'SET_VISIBILITY_FILTER',
+    filter
+  }
+}
 
 let AddTodo = ({ dispatch }) => { 
   let input
@@ -88,11 +91,7 @@ let AddTodo = ({ dispatch }) => {
         input = node
       }} />
       <button onClick={() => {
-        dispatch({
-          type: 'ADD_TODO',
-          id: nextTodoId++,
-          text: input.value
-        })
+        dispatch(addTodo(input.value))
         input.value = ''
       }}>
         Add Todo
@@ -100,24 +99,7 @@ let AddTodo = ({ dispatch }) => {
     </div>)
 }
 
-// It's pretty common pattern to inject just the dispatch function. 
-// This is why if you specify null or any false value in connect 
-// as the second argument, you're going to get dispatch injected as a prop. 
-
-// The default behavior will be to not subscribe to this store 
-// and to inject just the dispatch function as a prop.
 AddTodo = connect()(AddTodo)
-
-
-// **KEEP IN YOUR MIND**
-// IF YOU DON'T SPECIFY THE CONTEXTTYPES
-// YOU **WON'T** RECEIVE CONTEXT
-
-// we will use context from Provider so we have to do this.
-// AddTodo.contextTypes = {
-//   store: React.PropTypes.object
-// }
-
 
 // Purely presentational component
 const Todo = ({ onClick, completed, text }) => (
@@ -155,73 +137,15 @@ const mapStateToTodoListProps = (state) => {
 const mapDispatchToTodoListProps = (dispatch) => {
   return {
     onTodoClick: id => {
-      dispatch({
-        type: 'TOGGLE_TODO',
-        id
-      })
+      dispatch(toggleTodo(id))
     }
   }
 }
 
-
-// connect is a **CURRIED** function so the return value is a function.
-// using connect, we won't need to specify the contextTypes
-// connect do it for us. => @TODO I really wanna more details about it, may be later.
-// we can use it to generate container function
-// container => receive state
-
-
-// One thing to remind: 
-// Although connect is a curried function, but the amount of argument in connect
-// is fixed
-// Passing in mapStateToProps or mapDispatchToProps or both of it is totally up to you
-// Sometime our container may need to hanlde some event wrapped with dispatch
-// so we do mapDispatchToProps
-// Sometime we just want to pass in state
-// then we do mapStateToProps, it's clear :)
-// Connect will calculate the props to pass through the presentational component by merging
-// the objects returned from mapStateToProps, mapDispatchToProps, and its own props.
 const VisibleTodoList = connect(
   mapStateToTodoListProps,
   mapDispatchToTodoListProps
 )(TodoList)
-
-// TodoList is the target to wrap and pass the props to
-
-// using connect generate VisibleTodoList container for us ,
-// we don't need to write manually
-
-// so in the container , we did three things
-
-// 1. receive store from Provider, which is the center we store all state
-// 2. subscribe a force update function to store
-// 3. unsubscribe when component will unmount
-
-
-// class VisibleTodoList extends Component {
-//   componentDidMount() {
-//     const { store } = this.context
-//     this.unsubscribe = store.subscribe(() =>
-//       this.forceUpdate()
-//     )
-//   }
-//   componentWillUnMount() {
-//     this.unsubscribe()
-//   }
-//   render () {
-//     const { store } = this.context
-//     const state = store.getState()
-//     return (
-//       <TodoList
-//       />
-//     )
-//   }
-// }
-
-// we will use context from Provider so we have to do this.
-// VisibleTodoList.contextTypes = {
-//   store: React.PropTypes.object
-// }
 
 const Link = ({ active, children, onClick }) => {
   if (active) {
@@ -239,97 +163,57 @@ const Link = ({ active, children, onClick }) => {
   )
 }
 
-// Container Component 
-// provide data and behavior for the presentational component
-
-/**
- * Secondary Top level - Container components
- * FilterLink
- *    ---Link
- */
-class FilterLink extends Component {
-  componentDidMount() {
-    const { store } = this.context
-    this.unsubscribe = store.subscribe(() =>
-      this.forceUpdate()
-    )
-  }
-  componentWillUnMount() {
-    this.unsubscribe()
-  }
-  render() {
-    const { store } = this.context
-    const props = this.props
-    const state = store.getState()
-    return (
-      <Link
-        active={props.filter === state.visibilityFilter}
-        onClick={() => 
-          store.dispatch({
-            type: 'SET_VISIBILITY_FILTER',
-            filter: props.filter
-          })}
-      >
-        {props.children}
-      </Link>
-    )
+const mapStateToLinkProps = (state, ownProps) => {
+  return {
+    active: ownProps.filter === state.visibilityFilter
   }
 }
-// we will use context from Provider so we have to do this.
-FilterLink.contextTypes = {
-  store: React.PropTypes.object
+
+
+const mapDispatchToLinkProps = (dispatch, ownProps) => {
+  return {
+    onClick: () => {
+      dispatch(
+        setVisibilityFilter(ownProps.filter)
+      )
+    }
+  }
 }
 
-// presentational Compenents
+const FilterLink = connect(
+  mapStateToLinkProps,
+  mapDispatchToLinkProps
+)(Link)
+
 const Footer = () => (
   <p>
     Show:
     {' '}
-    <FilterLink
-      filter='SHOW_ALL'
-    >
+    <FilterLink filter='SHOW_ALL'>
       ALL
     </FilterLink>
     {' '}
-    <FilterLink
-      filter='SHOW_ACTIVE'
-    >
+    <FilterLink filter='SHOW_ACTIVE'>
       ACTIVE
     </FilterLink>
     {' '}
-    <FilterLink
-      filter='SHOW_COMPLETED'
-    >
+    <FilterLink filter='SHOW_COMPLETED'>
       COMPLETED
     </FilterLink>
   </p>
 )
 
-const TodoApp = ({store}) => (
+const TodoApp = () => (
   <div>
     <AddTodo />
     <VisibleTodoList />
     <Footer />
   </div>
 )
-/*** Compenents end ***/
 
-// This time we use Provider offered by React-Redux
-const { Provider } = ReactRedux
-const todoApp = combineReducers({ todos, visibilityFilter })
 ReactDOM.render(
-  <Provider store={createStore(todoApp)}>
+  <Provider store={createStore(combineReducers({ todos, visibilityFilter }))}>
     <TodoApp />
   </Provider>,
   document.getElementById('root')
 )
-
-
-/**
- * So we can notice context's mechanism is implicitly pass down the data.
- * It's powerful.
- * But's gloabal variable (Its nature) is not that good
- * Unless you're using it for dependency injection, 
- * like here when we need to make a single object available to all 
- * components, then probably you shouldn't use context.
- */
