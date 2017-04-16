@@ -58,52 +58,11 @@ var visibilityFilter = function visibilityFilter() {
   }
 };
 
-var getVisibleTodos = function getVisibleTodos(todos, filter) {
-  switch (filter) {
-    case 'SHOW_ALL':
-      return todos;
-    case 'SHOW_COMPLETED':
-      return todos.filter(function (t) {
-        return t.completed;
-      });
-    case 'SHOW_ACTIVE':
-      return todos.filter(function (t) {
-        return !t.completed;
-      });
-  }
-};
-
-var nextTodoId = 0;
-
-// action creator
-var addTodo = function addTodo(text) {
-  return {
-    type: 'ADD_TODO',
-    id: nextTodoId++,
-    text: text
-  };
-};
-
-// action creator
-var toggleTodo = function toggleTodo(id) {
-  return {
-    type: 'TOGGLE_TODO',
-    id: id
-  };
-};
-
-// action creator
-var setVisibilityFilter = function setVisibilityFilter(filter) {
-  return {
-    type: 'SET_VISIBILITY_FILTER',
-    filter: filter
-  };
-};
-
 var AddTodo = function AddTodo(_ref) {
   var dispatch = _ref.dispatch;
 
-  var input = void 0;
+  var input = void 0,
+      nextTodoId = 0;
   return React.createElement(
     'div',
     null,
@@ -113,7 +72,7 @@ var AddTodo = function AddTodo(_ref) {
     React.createElement(
       'button',
       { onClick: function onClick() {
-          dispatch(addTodo(input.value));
+          dispatch(addTodo(input.value, nextTodoId++));
           input.value = '';
         } },
       'Add Todo'
@@ -121,6 +80,7 @@ var AddTodo = function AddTodo(_ref) {
   );
 };
 
+// Container 
 AddTodo = connect()(AddTodo);
 
 // Purely presentational component
@@ -159,19 +119,32 @@ var TodoList = function TodoList(_ref3) {
 };
 
 var mapStateToTodoListProps = function mapStateToTodoListProps(state) {
+  var getVisibleTodos = function getVisibleTodos(todos, filter) {
+    switch (filter) {
+      case 'SHOW_ALL':
+        return todos;
+      case 'SHOW_COMPLETED':
+        return todos.filter(function (t) {
+          return t.completed;
+        });
+      case 'SHOW_ACTIVE':
+        return todos.filter(function (t) {
+          return !t.completed;
+        });
+    }
+  };
   return {
     todos: getVisibleTodos(state.todos, state.visibilityFilter)
   };
 };
 
 var mapDispatchToTodoListProps = function mapDispatchToTodoListProps(dispatch) {
-  return {
-    onTodoClick: function onTodoClick(id) {
-      dispatch(toggleTodo(id));
-    }
-  };
+  return { onTodoClick: function onTodoClick(id) {
+      return dispatch(toggleTodo(id));
+    } };
 };
 
+// Container 
 var VisibleTodoList = connect(mapStateToTodoListProps, mapDispatchToTodoListProps)(TodoList);
 
 var Link = function Link(_ref4) {
@@ -199,19 +172,16 @@ var Link = function Link(_ref4) {
 };
 
 var mapStateToLinkProps = function mapStateToLinkProps(state, ownProps) {
-  return {
-    active: ownProps.filter === state.visibilityFilter
-  };
+  return { active: ownProps.filter === state.visibilityFilter };
 };
 
 var mapDispatchToLinkProps = function mapDispatchToLinkProps(dispatch, ownProps) {
-  return {
-    onClick: function onClick() {
-      dispatch(setVisibilityFilter(ownProps.filter));
-    }
-  };
+  return { onClick: function onClick() {
+      return dispatch(setVisibilityFilter(ownProps.filter));
+    } };
 };
 
+// Container 
 var FilterLink = connect(mapStateToLinkProps, mapDispatchToLinkProps)(Link);
 
 var Footer = function Footer() {

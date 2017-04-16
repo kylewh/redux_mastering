@@ -32,7 +32,7 @@ module.exports = {
       names: ['vendor', 'manifest']
     }),
     new HtmlWebpackPlugin({
-      template: 'src/index.html'
+      template: './index.html'
     })
   ]
 }
