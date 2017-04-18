@@ -3,15 +3,14 @@ import { connect } from 'react-redux'
 import { addTodo } from '../actions'
 
 const AddTodo = ({ dispatch }) => { 
-  let input,
-      nextTodoId = 0
+  let input
   return(
     <div>
       <input ref={node => {
         input = node
       }} />
       <button onClick={() => {
-        dispatch(addTodo(input.value, nextTodoId++))
+        dispatch(addTodo(input.value))
         input.value = ''
       }}>
         Add Todo

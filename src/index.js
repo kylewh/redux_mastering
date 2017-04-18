@@ -1,23 +1,11 @@
 import React from 'react'
 import { render } from 'react-dom'
-import { Provider } from 'react-redux'
-import { createStore } from 'redux'
-import todoApp from './reducers'
-import App from './components/App'
+import storeConfig from './storeConfig'
+import Root from './components/Root'
 
-const persistedState = {
-  todos: [{
-    id: '0',
-    text: 'I am alreay here for long while!',
-    completed: false,
-  }]
-}
-
-const store = createStore(todoApp, persistedState)
+const store = storeConfig()
 
 render(
-  <Provider store={store}>
-    <App />
-  </Provider>,
+  <Root store={store} />,
   document.getElementById('root')
 )
