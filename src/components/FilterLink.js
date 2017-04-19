@@ -1,11 +1,7 @@
 import React from 'react'
 import { NavLink } from 'react-router-dom'
 
-const FilterLink = ({ filter, children }) => {
-  
-  console.log(filter)
-  
-  return(
+const FilterLink = ({ filter, children }) => (
   <NavLink
     exact={true}
     to={filter === 'all' ? '/' : `/${filter}`}
@@ -16,6 +12,6 @@ const FilterLink = ({ filter, children }) => {
   >
     {children}
   </NavLink>
-)}
+)
 
 export default FilterLink

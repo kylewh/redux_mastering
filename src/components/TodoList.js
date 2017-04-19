@@ -1,7 +1,9 @@
 import React, { PropTypes } from 'react'
 import Todo from './Todo'
 
-const TodoList = ({ todos, onTodoClick }) => (
+const TodoList = ({ todos, onTodoClick }) => {
+  console.log(onTodoClick) //you will see this function is wrapped with disptach
+  return (
   <ul>
     {todos.map(todo =>
       <Todo
@@ -11,6 +13,6 @@ const TodoList = ({ todos, onTodoClick }) => (
       />
     )}
   </ul>
-)
+)}
 
 export default TodoList
