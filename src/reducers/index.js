@@ -1,14 +1,36 @@
 import { combineReducers } from 'redux'
-import todos, * as fromTodos from './todos'
+import byId, * as fromById from './byId'
+import createList, * as fromList from './createList'
 
-const todoApp = combineReducers({
-  todos
+const listByFilters = combineReducers({
+  all: createList('all'),
+  active: createList('active'),
+  completed: createList('completed')
 })
 
-export default todoApp
+const todos = combineReducers({
+  byId,
+  listByFilters,
+})
 
-export const getVisibleTodos = (state, filter) =>
-  fromTodos.getVisibleTodos(state.todos, filter)
-  // we specify target state: todos here.
-  // once the data-structure changed we can specify it again
-  
+export default todos;
+
+// const getAllTodos = (state) =>
+//   state.allIds.map(id => state.byId[id])
+
+
+// selector: This is a function that you write. 
+// It specifies what parts of the state a component
+// needs as properties.
+export const getVisibleTodos = (state, filter) => {
+  const ids = fromList.getIds(state.listByFilters[filter])
+  return ids.map(id => fromById.getTodo(state.byId, id))
+}
+
+export const getIsFetching = (state, filter) => {
+  return fromList.getIsFetching(state.listByFilters[filter])
+}
+
+export const getErrorMessage = (state, filter) => {
+  return fromList.getErrorMessage(state.listByFilters[filter])
+}

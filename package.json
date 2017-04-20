@@ -18,12 +18,16 @@
     "history": "^4.6.1",
     "lodash": "^4.17.4",
     "node-uuid": "^1.4.8",
+    "normalizr": "^3.2.2",
     "react": "^15.5.4",
     "react-dom": "^15.5.4",
     "react-redux": "^5.0.4",
     "react-router": "^4.1.1",
     "react-router-dom": "^4.1.1",
-    "redux": "^3.6.0"
+    "redux": "^3.6.0",
+    "redux-logger": "^3.0.1",
+    "redux-promise": "^0.5.3",
+    "redux-thunk": "^2.2.0"
   },
   "devDependencies": {
     "babel-cli": "^6.24.1",
